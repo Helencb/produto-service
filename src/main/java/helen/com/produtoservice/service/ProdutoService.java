@@ -86,6 +86,18 @@ public class ProdutoService {
         return mapper.toResponse(atualizado);
     }
 
+    public void atualizarStatus(UUID id, StatusProduto status) {
+        Produto produto = repository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> new ProdutoNotFoundException(id));
+        produto.setStatus(status);
+
+        if(status == StatusProduto.SEM_ESTOQUE) {
+            produto.setAtivo(false);
+        }
+
+        repository.save(produto);
+        log.info("Status atualizado: {} -> {}", id, status);
+    }
 
     public void deletar(UUID id) {
         Produto produto = repository.findByIdAndAtivoTrue(id)
