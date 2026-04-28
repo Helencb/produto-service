@@ -23,7 +23,7 @@ public class ProdutoProducer {
                 RoutingKeys.PRODUTO_CRIADO,
                 event
         );
-        log.info("Mensagem enviada: {}", event);
+        log.info("[RABBITMQ] Evento produto criado enviado: {}", event);
     }
 
     public void enviarProdutoAtualizado(ProdutoAtualizadoEvent event) {
@@ -32,7 +32,7 @@ public class ProdutoProducer {
                 RoutingKeys.PRODUTO_ATUALIZADO,
                 event
         );
-        log.info("Mensagem enviada: {}", event);
+        log.info("[RABBITMQ] Evento produto criado enviado: {}", event);
     }
 
     public void enviarProdutoDesativado(ProdutoDesativadoEvent event) {
@@ -41,6 +41,6 @@ public class ProdutoProducer {
                 RoutingKeys.PRODUTO_DESATIVADO,
                 event
         );
-        log.info("Mensagem enviada: {}", event);
+        log.info("[RABBITMQ] Evento produto criado enviado: {}", event);
     }
 }
