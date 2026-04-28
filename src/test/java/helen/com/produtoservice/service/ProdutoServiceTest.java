@@ -1,4 +1,4 @@
-package helen.com.produtoservice.Service;
+package helen.com.produtoservice.service;
 
 import helen.com.produtoservice.dto.ProdutoCreateDTO;
 import helen.com.produtoservice.dto.ProdutoResponseDTO;
@@ -7,7 +7,6 @@ import helen.com.produtoservice.messaging.producer.ProdutoProducer;
 import helen.com.produtoservice.model.Produto;
 import helen.com.produtoservice.model.StatusProduto;
 import helen.com.produtoservice.repository.ProdutoRepository;
-import helen.com.produtoservice.service.ProdutoService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

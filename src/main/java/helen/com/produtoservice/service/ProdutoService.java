@@ -54,17 +54,20 @@ public class ProdutoService {
         return mapper.toResponse(salvo);
     }
 
+    @Transactional(readOnly = true)
     public Page<ProdutoResponseDTO> listar (Pageable pageable) {
         return repository.findAllByAtivoTrue(pageable)
                 .map(mapper::toResponse);
     }
 
+    @Transactional(readOnly = true)
     public ProdutoResponseDTO buscarPorId(UUID id) {
         Produto produto = repository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() -> new ProdutoNotFoundException(id));
         return mapper.toResponse(produto);
     }
 
+    @Transactional
     public ProdutoResponseDTO atualizar(UUID id, ProdutoUpdateDTO dto) {
         Produto produto = repository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() -> new ProdutoNotFoundException(id));
@@ -86,6 +89,7 @@ public class ProdutoService {
         return mapper.toResponse(atualizado);
     }
 
+    @Transactional
     public void atualizarStatus(UUID id, StatusProduto status) {
         Produto produto = repository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() -> new ProdutoNotFoundException(id));
@@ -99,6 +103,7 @@ public class ProdutoService {
         log.info("Status atualizado: {} -> {}", id, status);
     }
 
+    @Transactional
     public void deletar(UUID id) {
         Produto produto = repository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() ->  new ProdutoNotFoundException(id));

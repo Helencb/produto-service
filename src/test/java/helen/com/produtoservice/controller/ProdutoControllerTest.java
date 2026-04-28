@@ -1,6 +1,5 @@
-package helen.com.produtoservice.Controller;
+package helen.com.produtoservice.controller;
 
-import helen.com.produtoservice.controller.ProdutoController;
 import helen.com.produtoservice.dto.ProdutoCreateDTO;
 import helen.com.produtoservice.dto.ProdutoResponseDTO;
 import helen.com.produtoservice.model.StatusProduto;
