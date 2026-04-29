@@ -38,7 +38,7 @@ public class ProdutoServiceTest {
 
     @Test
     void deveCriarProduto() {
-        ProdutoCreateDTO dto = new ProdutoCreateDTO("Rosa", new BigDecimal("10.00"));
+        ProdutoCreateDTO dto = new ProdutoCreateDTO("Rosa", "Flor vermelha",new BigDecimal("10.00"));
 
         Produto produto = new Produto();
         produto.setNome("Rosa");

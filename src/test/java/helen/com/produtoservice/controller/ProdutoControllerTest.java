@@ -7,12 +7,12 @@ import helen.com.produtoservice.service.ProdutoService;
 import org.springframework.http.MediaType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -45,7 +45,7 @@ public class ProdutoControllerTest {
     void deveCriarProduto() throws Exception {
         UUID id = UUID.randomUUID();
 
-        ProdutoCreateDTO dto = new ProdutoCreateDTO("Rosa", new BigDecimal("10.00"));
+        ProdutoCreateDTO dto = new ProdutoCreateDTO("Rosa", "Flor vermelha", new BigDecimal("10.00"));
 
         ProdutoResponseDTO response = new ProdutoResponseDTO(id, "Rosa", new BigDecimal("10.00"), StatusProduto.CRIADO, true);
 
