@@ -1,0 +1,16 @@
+<configuration>
+
+    <property name="PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{correlationId}] %logger - %msg%n"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+
+</configuration>

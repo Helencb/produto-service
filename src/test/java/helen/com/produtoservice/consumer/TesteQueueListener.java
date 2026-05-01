@@ -1,12 +1,15 @@
 package helen.com.produtoservice.consumer;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.CountDownLatch;
 
 @Component
-public class TestListener {
+@Profile("rabbit-test")
+public class TesteQueueListener {
+
     private CountDownLatch latch = new CountDownLatch(1);
     private String mensagem;
 
@@ -20,8 +23,7 @@ public class TestListener {
         return latch;
     }
 
-    public String getMessagem() {
+    public String getMensagem() {
         return mensagem;
     }
 }
-

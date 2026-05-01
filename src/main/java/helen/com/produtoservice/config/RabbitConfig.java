@@ -1,6 +1,8 @@
 package helen.com.produtoservice.config;
 
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;import org.springframework.amqp.support.converter.MessageConverter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.amqp.core.*;
@@ -8,11 +10,15 @@ import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFacto
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.retry.RejectAndDontRequeueRecoverer;
 import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
+import org.springframework.context.annotation.Profile;
 import org.springframework.retry.interceptor.RetryOperationsInterceptor;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import static helen.com.produtoservice.messaging.routing.RoutingKeys.*;
 
+@Slf4j
 @Configuration
+@Profile("!test")
 public class RabbitConfig {
     //EXCHANGES
     public static final String EXCHANGE = "produto.exchange";
@@ -36,13 +42,13 @@ public class RabbitConfig {
         return new TopicExchange(DLQ_EXCHANGE);
     }
 
-   // QUEUES
+    // QUEUES
     @Bean
     public Queue produtoCriacaoQueue() {
         return QueueBuilder
                 .durable(PRODUTO_CRIACAO_QUEUE)
                 .withArgument("x-dead-letter-exchange", DLQ_EXCHANGE)
-                .withArgument("x-dead-letter-routing-key",RK_DLQ)
+                .withArgument("x-dead-letter-routing-key", RK_DLQ)
                 .build();
     }
 
@@ -121,14 +127,41 @@ public class RabbitConfig {
     }
 
     @Bean
+    public RabbitTemplate rabbitTemplate(
+            ConnectionFactory connectionFactory,
+            MessageConverter messageConverter
+    ) {
+        RabbitTemplate template = new RabbitTemplate(connectionFactory);
+
+        template.setMessageConverter(messageConverter);
+
+        template.setConfirmCallback((correlationData, ack, cause) -> {
+            if (ack) {
+                log.info("[RABBITMQ] Mensagem confirmada pelo exchange");
+            } else {
+                log.error("[RABBITMQ] Falha ao enviar mensagem: {}", cause);
+            }
+        });
+
+        template.setReturnsCallback(returned -> {
+            log.error("[RABBITMQ] Mensagem não roteada! exchange={} routingKey={}",
+                    returned.getExchange(),
+                    returned.getRoutingKey());
+        });
+
+        template.setMandatory(true);
+
+        return template;
+    }
+
+
+    @Bean
     public RetryOperationsInterceptor retryInterceptor() {
 
         return RetryInterceptorBuilder
                 .stateless()
                 .maxAttempts(3)
-                .recoverer(
-                        new RejectAndDontRequeueRecoverer()
-                )
+                .recoverer(new RejectAndDontRequeueRecoverer())
                 .build();
     }
 
@@ -144,6 +177,7 @@ public class RabbitConfig {
         factory.setConnectionFactory(connectionFactory);
         factory.setAdviceChain(retryInterceptor);
         factory.setMessageConverter(messageConverter);
+
         factory.setDefaultRequeueRejected(false);
 
         return factory;

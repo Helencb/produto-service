@@ -12,6 +12,7 @@ import helen.com.produtoservice.messaging.producer.ProdutoProducer;
 import helen.com.produtoservice.model.Produto;
 import helen.com.produtoservice.model.StatusProduto;
 import helen.com.produtoservice.repository.ProdutoRepository;
+import helen.com.produtoservice.util.LogUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -33,14 +34,20 @@ public class ProdutoService {
 
     @Transactional
     public ProdutoResponseDTO criar(ProdutoCreateDTO dto) {
-        Produto produto = mapper.toEntity(dto);
 
+        log.info("Iniciando criação de produto | correlationId = {} | nome = {}",
+                LogUtil.get(),
+                dto.nome());
+
+        Produto produto = mapper.toEntity(dto);
         produto.setStatus(StatusProduto.CRIADO);
         produto.setAtivo(true);
 
         Produto salvo = repository.save(produto);
 
-        log.info("Produto criado: {}", salvo.getId());
+        log.info("Produto salvo no banco | correlationId={} | id={}",
+                LogUtil.get(),
+                salvo.getId());
 
         ProdutoCriadoEvent event = new ProdutoCriadoEvent(
                 salvo.getId(),
@@ -51,31 +58,57 @@ public class ProdutoService {
 
         producer.enviarProdutoCriado(event);
 
+        log.info("Evento ProdutoCriado enviado | correlationId={} | id={}",
+                LogUtil.get(),
+                salvo.getId());
+
         return mapper.toResponse(salvo);
     }
 
     @Transactional(readOnly = true)
     public Page<ProdutoResponseDTO> listar (Pageable pageable) {
+        log.info("Listando produtos | correlationId={}", LogUtil.get());
+
         return repository.findAllByAtivoTrue(pageable)
                 .map(mapper::toResponse);
     }
 
     @Transactional(readOnly = true)
     public ProdutoResponseDTO buscarPorId(UUID id) {
+        log.info("Buscando produto por ID | correlationId={} | id={}",
+                LogUtil.get(),
+                id);
+
         Produto produto = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new ProdutoNotFoundException(id));
+                .orElseThrow(() -> {
+                    log.error("Produto não encontrado | correlationId={} | id={}",
+                            LogUtil.get(),
+                            id);
+                    return new ProdutoNotFoundException(id);
+                });
         return mapper.toResponse(produto);
     }
 
     @Transactional
     public ProdutoResponseDTO atualizar(UUID id, ProdutoUpdateDTO dto) {
+        log.info("Atualizando produto | correlationId={} | id={}",
+                LogUtil.get(),
+                id);
+
         Produto produto = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new ProdutoNotFoundException(id));
+                .orElseThrow(() -> {
+                    log.error("Produto não encontrado | correlationId={} | id={}",
+                            LogUtil.get(),
+                            id);
+                    return new ProdutoNotFoundException(id);
+                });
 
         mapper.updateEntity(dto, produto);
         Produto atualizado = repository.save(produto);
 
-        log.info("Produto atualizado: {}", id);
+        log.info("Produto atualizado no banco | correlationId={} | id={}",
+                LogUtil.get(),
+                id);
 
         ProdutoAtualizadoEvent event = new ProdutoAtualizadoEvent(
                 atualizado.getId(),
@@ -86,31 +119,58 @@ public class ProdutoService {
 
         producer.enviarProdutoAtualizado(event);
 
+        log.info("Evento ProdutoAtualizado enviado | correlationId={} | id={}",
+                LogUtil.get(),
+                id);
+
         return mapper.toResponse(atualizado);
     }
 
     @Transactional
     public void atualizarStatus(UUID id, StatusProduto status) {
-        Produto produto = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new ProdutoNotFoundException(id));
-        produto.setStatus(status);
+        log.info("Atualizando status do produto | correlationId={} | id={} | novoStatus={}",
+                LogUtil.get(),
+                id,
+                status);
 
+        Produto produto = repository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> {
+                    log.error("Produto não encontrado para atualizar status | correlationId={} | id={}",
+                            LogUtil.get(),
+                            id);
+                    return new ProdutoNotFoundException(id);
+                });
+
+        produto.setStatus(status);
         if(status == StatusProduto.SEM_ESTOQUE) {
             produto.setAtivo(false);
         }
 
         repository.save(produto);
-        log.info("Status atualizado: {} -> {}", id, status);
+        log.info("Status atualizado com sucesso | correlationId={} | id={}",
+                LogUtil.get(),
+                id);
     }
 
     @Transactional
     public void deletar(UUID id) {
+        log.info("Desativando produto | correlationId={} | id={}",
+                LogUtil.get(),
+                id);
+
         Produto produto = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() ->  new ProdutoNotFoundException(id));
+                .orElseThrow(() -> {
+                    log.error("Produto não encontrado para deletar | correlationId={} | id={}",
+                            LogUtil.get(),
+                            id);
+                    return new ProdutoNotFoundException(id);
+                });
         produto.setAtivo(false);
         repository.save(produto);
 
-        log.info("Produto desativado: {}", id);
+        log.info("Produto desativado no banco | correlationId={} | id={}",
+                LogUtil.get(),
+                id);
 
         ProdutoDesativadoEvent event = new ProdutoDesativadoEvent(
                 id,
@@ -119,7 +179,10 @@ public class ProdutoService {
 
         producer.enviarProdutoDesativado(event);
 
+        log.info("Evento ProdutoDesativado enviado | correlationId={} | id={}",
+                LogUtil.get(),
+                id);
+
     }
-
-
 }
+
