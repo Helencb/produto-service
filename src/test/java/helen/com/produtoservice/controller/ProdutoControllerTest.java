@@ -2,7 +2,10 @@ package helen.com.produtoservice.controller;
 
 import helen.com.produtoservice.dto.ProdutoCreateDTO;
 import helen.com.produtoservice.dto.ProdutoResponseDTO;
+import helen.com.produtoservice.metrics.ErrorMetrics;
 import helen.com.produtoservice.model.StatusProduto;
+import helen.com.produtoservice.security.JwtAuthenticationEntryPoint;
+import helen.com.produtoservice.security.JwtService;
 import helen.com.produtoservice.service.ProdutoService;
 import org.springframework.http.MediaType;
 import org.junit.jupiter.api.Test;
@@ -36,6 +39,15 @@ public class ProdutoControllerTest {
 
     @MockitoBean
     private ProdutoService service;
+
+    @MockitoBean
+    private ErrorMetrics errorMetrics;
+
+    @MockitoBean
+    private JwtService jwtService;
+
+    @MockitoBean
+    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Autowired
     private ObjectMapper objectMapper;
