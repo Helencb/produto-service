@@ -16,14 +16,8 @@ public class RoutingKeys {
     public static final String PRODUTO_EM_ESTOQUE =
             "produto.em-estoque";
 
-    public static final String PRODUTO_CATALOGO_RETRY =
-            "produto.catalogo.retry";
-
     public static final String PRODUTO_CATALOGO_DLQ =
             "produto.catalogo.dlq";
-
-    public static final String RK_RETRY =
-            "produto.retry";
 
     public static final String RK_DLQ =
             "produto.dlq";

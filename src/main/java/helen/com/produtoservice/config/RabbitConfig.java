@@ -26,6 +26,8 @@ public class RabbitConfig {
 
     //QUEUES
     public static final String PRODUTO_CRIACAO_QUEUE = "produto.criacao.queue";
+    public static final String PRODUTO_ATUALIZACAO_QUEUE = "produto.atualizacao.queue";
+    public static final String PRODUTO_DESATIVACAO_QUEUE = "produto.desativacao.queue";
     public static final String PRODUTO_CATALOGO_QUEUE = "produto.catalogo.queue";
     public static final String PRODUTO_CATALOGO_DLQ_QUEUE = "produto.catalogo.dlq.queue";
     public static final String DLQ_QUEUE = "produto.dlq.queue";
@@ -47,6 +49,24 @@ public class RabbitConfig {
     public Queue produtoCriacaoQueue() {
         return QueueBuilder
                 .durable(PRODUTO_CRIACAO_QUEUE)
+                .withArgument("x-dead-letter-exchange", DLQ_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", RK_DLQ)
+                .build();
+    }
+
+    @Bean
+    public Queue produtoAtualizacaoQueue() {
+        return QueueBuilder
+                .durable(PRODUTO_ATUALIZACAO_QUEUE)
+                .withArgument("x-dead-letter-exchange", DLQ_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", RK_DLQ)
+                .build();
+    }
+
+    @Bean
+    public Queue produtoDesativacaoQueue() {
+        return QueueBuilder
+                .durable(PRODUTO_DESATIVACAO_QUEUE)
                 .withArgument("x-dead-letter-exchange", DLQ_EXCHANGE)
                 .withArgument("x-dead-letter-routing-key", RK_DLQ)
                 .build();
@@ -86,6 +106,22 @@ public class RabbitConfig {
                 .bind(produtoCriacaoQueue())
                 .to(exchange())
                 .with(PRODUTO_CRIADO);
+    }
+
+    @Bean
+    public Binding produtoAtualizadoBinding() {
+        return BindingBuilder
+                .bind(produtoAtualizacaoQueue())
+                .to(exchange())
+                .with(PRODUTO_ATUALIZADO);
+    }
+
+    @Bean
+    public Binding produtoDesativadoBinding() {
+        return BindingBuilder
+                .bind(produtoDesativacaoQueue())
+                .to(exchange())
+                .with(PRODUTO_DESATIVADO);
     }
 
     @Bean
