@@ -82,6 +82,28 @@ Mensagem é rejeitada (sem requeue) e cai na Dead Letter Queue (DLQ) via x-dead-
 
 ---
 
+# 🔐 Segurança
+
+O serviço valida tokens **JWT (HS256)** emitidos por um serviço de autenticação externo — este microserviço não faz login nem guarda usuário/senha, apenas valida a assinatura e extrai claims (`sub`, `roles`) do token recebido no header `Authorization: Bearer <token>`.
+
+| Rota                     | Acesso                          |
+| ------------------------ | -------------------------------- |
+| `GET /produtos`, `GET /produtos/{id}` | Público                |
+| `POST /produtos`, `PUT /produtos/{id}`, `DELETE /produtos/{id}` | Requer JWT válido |
+| `/swagger-ui/**`, `/api-docs/**`, `/actuator/**` | Público          |
+
+Sem token válido, as rotas protegidas retornam `401` no formato padrão de resposta da API.
+
+## Configuração
+
+```properties
+app.security.jwt.secret=${JWT_SECRET}
+```
+
+O segredo precisa ser o **mesmo** configurado no serviço de autenticação que emite os tokens (HMAC compartilhado). Em `dev`/`test` há um valor padrão apenas para desenvolvimento local; em produção a variável `JWT_SECRET` é obrigatória.
+
+---
+
 # 🚀 Tecnologias Utilizadas
 
 ## Back-End
@@ -297,7 +319,7 @@ Para testar o fluxo de retry:
 * Prometheus + Grafana
 * CI/CD Pipeline
 * Observabilidade distribuída
-* Spring Security + JWT
+* Outbox pattern (as propriedades `app.outbox.*` ainda não têm implementação por trás)
 
 ---
 
