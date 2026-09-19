@@ -71,12 +71,14 @@ Consumer processa mensagem
 
 SE DER ERRO:
         ↓
-Retry automático (3 tentativas)
+Retry automático em memória (3 tentativas síncronas via RetryOperationsInterceptor)
 
 SE CONTINUAR FALHANDO:
         ↓
-Dead Letter Queue (DLQ)
+Mensagem é rejeitada (sem requeue) e cai na Dead Letter Queue (DLQ) via x-dead-letter-exchange
 ```
+
+> O retry é feito em memória, dentro do próprio listener (`RetryOperationsInterceptor`, 3 tentativas síncronas antes de rejeitar). Não há uma retry queue intermediária com TTL — se uma mensagem esgota as tentativas, ela vai direto para a DLQ correspondente.
 
 ---
 
@@ -142,12 +144,16 @@ src/main/java
 
 ## Queues
 
-| Queue                        | Responsabilidade         |
-| ---------------------------- | ------------------------ |
-| `produto.criacao.queue`      | Processamento de criação |
-| `produto.catalogo.queue`     | Eventos de catálogo      |
-| `produto.catalogo.dlq.queue` | DLQ do catálogo          |
-| `produto.dlq.queue`          | DLQ genérica             |
+| Queue                          | Responsabilidade           |
+| ------------------------------ | -------------------------- |
+| `produto.criacao.queue`        | Processamento de criação   |
+| `produto.atualizacao.queue`    | Processamento de atualização |
+| `produto.desativacao.queue`    | Processamento de desativação |
+| `produto.catalogo.queue`       | Eventos de catálogo        |
+| `produto.catalogo.dlq.queue`   | DLQ do catálogo            |
+| `produto.dlq.queue`            | DLQ genérica                |
+
+> `produto.criacao.queue`, `produto.atualizacao.queue` e `produto.desativacao.queue` hoje não têm consumer interno — elas existem para garantir que os eventos publicados no `produto.exchange` sejam roteados (o `RabbitTemplate` usa `mandatory=true`, então uma mensagem sem binding é apenas logada como "não roteada" e descartada). Outros microsserviços podem consumir dessas filas ou declarar as próprias.
 
 ---
 
