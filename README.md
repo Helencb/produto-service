@@ -100,7 +100,23 @@ Sem token válido, as rotas protegidas retornam `401` no formato padrão de resp
 app.security.jwt.secret=${JWT_SECRET}
 ```
 
-O segredo precisa ser o **mesmo** configurado no serviço de autenticação que emite os tokens (HMAC compartilhado). Em `dev`/`test` há um valor padrão apenas para desenvolvimento local; em produção a variável `JWT_SECRET` é obrigatória.
+O segredo precisa ser o **mesmo** configurado no serviço de autenticação que emite os tokens (HMAC compartilhado). Em `dev`/`test` há um valor padrão apenas para desenvolvimento local; em produção a variável `JWT_SECRET` é obrigatória. O valor default local é o mesmo usado por padrão no `auth-service` e no `api_gateway` (`my-super-secret-key-my-super-secret-key`), então os três funcionam juntos sem configuração extra em dev.
+
+---
+
+# 🧭 Service Discovery (Eureka)
+
+O `produto-service` se registra num [Eureka Server](https://github.com/Helencb/eureka-server) para ser descoberto pelo [API Gateway](https://github.com/Helencb/api_gateway), que roteia `/api/product/**` para `lb://PRODUCT-SERVICE`.
+
+```properties
+eureka.client.service-url.defaultZone=${EUREKA_URL:http://admin:123456@localhost:8761/eureka/}
+eureka.instance.appname=PRODUCT-SERVICE
+```
+
+* O nome de registro (`eureka.instance.appname`) é `PRODUCT-SERVICE` (inglês) para bater com a rota do gateway, mesmo com `spring.application.name=produto-service` (português) usado internamente em logs/métricas.
+* O Eureka Server exige HTTP Basic em toda chamada (inclusive registro), por isso as credenciais (`admin:123456` por padrão) vêm embutidas na própria URL — sem isso o registro falha com 401 silenciosamente nos logs.
+* Desabilitado no perfil `test` (`eureka.client.enabled=false`) para os testes não tentarem se conectar em nada.
+* No perfil `docker`, vem desabilitado por padrão (`EUREKA_ENABLED=false`) porque o `docker-compose.yml` deste repositório não sobe eureka-server/gateway/auth-service — habilite com `EUREKA_ENABLED=true` se conectar este container na mesma rede dos outros serviços.
 
 ---
 
