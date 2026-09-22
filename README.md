@@ -104,6 +104,46 @@ O segredo precisa ser o **mesmo** configurado no serviço de autenticação que 
 
 ---
 
+# 📤 Outbox Pattern
+
+Os eventos de domínio (`ProdutoCriado`, `ProdutoAtualizado`, `ProdutoDesativado`) não são mais publicados diretamente no `RabbitTemplate` dentro da mesma chamada. Em vez disso:
+
+```text
+Produto salvo/atualizado no banco
+        ↓
+Evento gravado na tabela outbox_events (mesma transação do JPA)
+        ↓
+Transação é commitada
+        ↓
+Tentativa imediata de publicação no RabbitMQ (best-effort, fora da transação)
+
+SE FALHAR (broker indisponível, etc.):
+        ↓
+Evento fica PENDENTE e o OutboxScheduler tenta novamente periodicamente
+        ↓
+Após esgotar app.outbox.max-tentativas → status FALHOU (requer investigação manual)
+```
+
+Isso resolve o problema de falta de garantia transacional: se o commit no banco falhar, o evento nunca é gravado na outbox (nada é publicado); se o commit for bem-sucedido mas o Rabbit estiver fora do ar no momento do publish, o evento fica registrado e é reconciliado automaticamente, sem se perder.
+
+| Componente         | Responsabilidade                                                        |
+| ------------------ | ------------------------------------------------------------------------ |
+| `OutboxService`     | Grava o evento (status `PENDENTE`) na mesma transação do agregado        |
+| `OutboxPublisher`   | Publica no Rabbit e atualiza o status (`PUBLICADO`/`PENDENTE`/`FALHOU`)   |
+| `OutboxScheduler`   | Reconcilia periodicamente os eventos `PENDENTE` que ainda não foram publicados |
+
+## Configuração
+
+```properties
+app.outbox.retry-delay-ms=30000   # intervalo do scheduler e backoff entre tentativas
+app.outbox.auto-publish=true      # liga/desliga o OutboxScheduler
+app.outbox.max-tentativas=5       # tentativas antes de marcar o evento como FALHOU
+```
+
+> A tabela `outbox_events` é criada automaticamente em `dev`/`test` (`ddl-auto=update`/`create-drop`). Em produção (`ddl-auto=validate`), a criação da tabela precisa ser aplicada manualmente ao banco antes do deploy, assim como já ocorre com a tabela `produtos`.
+
+---
+
 # 🚀 Tecnologias Utilizadas
 
 ## Back-End
@@ -230,6 +270,33 @@ spring.rabbitmq.listener.simple.default-requeue-rejected=false
 
 ---
 
+# 🐳 Docker / CI
+
+## Subir o ambiente completo com Docker Compose
+
+```bash
+docker compose up --build
+```
+
+Isso sobe MySQL, RabbitMQ e o `produto-service` (perfil `docker`) já conectados entre si. A API fica disponível em `http://localhost:8080` e o RabbitMQ Management em `http://localhost:15672` (guest/guest).
+
+## Build manual da imagem
+
+```bash
+docker build -t produto-service .
+docker run -p 8080:8080 --env-file .env produto-service
+```
+
+## CI
+
+O workflow `.github/workflows/ci.yml` roda em push/PR para `main`:
+
+* Sobe um container de RabbitMQ como *service* do próprio job, permitindo que os testes de integração (`RabbitIntegrationTest`, `ProdutoServiceIntegrationTest`) rodem sem depender de infraestrutura local.
+* Executa `./mvnw test`.
+* Builda a imagem Docker como verificação adicional (`docker build`).
+
+---
+
 # ▶️ Como Executar
 
 ## 1. Clonar repositório
@@ -311,15 +378,12 @@ Para testar o fluxo de retry:
 # 🔮 Melhorias Futuras
 
 * Testes unitários com JUnit e Mockito
-* Testcontainers
-* Docker
+* Testcontainers (os testes de integração ainda dependem de um RabbitMQ acessível, seja local ou via CI)
 * Kubernetes
 * API Gateway
 * OpenFeign
 * Prometheus + Grafana
-* CI/CD Pipeline
 * Observabilidade distribuída
-* Outbox pattern (as propriedades `app.outbox.*` ainda não têm implementação por trás)
 
 ---
 

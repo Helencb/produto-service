@@ -2,8 +2,10 @@ package helen.com.produtoservice.service;
 
 import helen.com.produtoservice.dto.ProdutoCreateDTO;
 import helen.com.produtoservice.dto.ProdutoResponseDTO;
+import helen.com.produtoservice.config.RabbitConfig;
 import helen.com.produtoservice.mapper.ProdutoMapper;
-import helen.com.produtoservice.messaging.producer.ProdutoProducer;
+import helen.com.produtoservice.messaging.outbox.OutboxService;
+import helen.com.produtoservice.messaging.routing.RoutingKeys;
 import helen.com.produtoservice.model.Produto;
 import helen.com.produtoservice.model.StatusProduto;
 import helen.com.produtoservice.repository.ProdutoRepository;
@@ -19,6 +21,7 @@ import java.util.UUID;
 import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -28,7 +31,7 @@ public class ProdutoServiceTest {
     private ProdutoRepository repoditory;
 
     @Mock
-    private ProdutoProducer producer;
+    private OutboxService outbox;
 
     @Mock
     private ProdutoMapper mapper;
@@ -61,6 +64,6 @@ public class ProdutoServiceTest {
         assertEquals("Rosa", response.nome());
 
         verify(repoditory).save(produto);
-        verify(producer).enviarProdutoCriado(any());
+        verify(outbox).registrar(eq(RabbitConfig.EXCHANGE), eq(RoutingKeys.PRODUTO_CRIADO), eq(salvo.getId()), any());
     }
 }
