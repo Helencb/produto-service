@@ -1,16 +1,14 @@
 package helen.com.produtoservice.messaging.producer;
 
-import helen.com.produtoservice.config.RabbitConfig;
-import helen.com.produtoservice.messaging.event.ProdutoAtualizadoEvent;
-import helen.com.produtoservice.messaging.event.ProdutoCriadoEvent;
-import helen.com.produtoservice.messaging.event.ProdutoDesativadoEvent;
-import helen.com.produtoservice.messaging.routing.RoutingKeys;
-
-import helen.com.produtoservice.util.LogUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
+
+import java.nio.charset.StandardCharsets;
 
 @Component
 @RequiredArgsConstructor
@@ -18,57 +16,20 @@ import org.springframework.stereotype.Component;
 public class ProdutoProducer {
     private final RabbitTemplate rabbit;
 
-    private static final String HEADER = "X-Correlation-ID";
+    private static final String CORRELATION_HEADER = "X-Correlation-ID";
+    private static final String TYPE_ID_HEADER = "__TypeId__";
 
-    public void enviarProdutoCriado(ProdutoCriadoEvent event) {
-        String correlationId = LogUtil.get();
+    public void publicarEvento(String exchange, String routingKey, String eventType, String payloadJson, String correlationId) {
+        Message message = MessageBuilder
+                .withBody(payloadJson.getBytes(StandardCharsets.UTF_8))
+                .setContentType(MessageProperties.CONTENT_TYPE_JSON)
+                .setHeader(TYPE_ID_HEADER, eventType)
+                .setHeader(CORRELATION_HEADER, correlationId)
+                .build();
 
-        rabbit.convertAndSend(
-                RabbitConfig.EXCHANGE,
-                RoutingKeys.PRODUTO_CRIADO,
-                event,
-                message -> {
-                    message.getMessageProperties()
-                            .setHeader(HEADER, correlationId);
-                    return message;
-                }
-        );
-        log.info("[RABBITMQ] Evento ProdutoCriado enviado | correlationId={} | id={}",
-                correlationId,
-                event.id());
+        rabbit.send(exchange, routingKey, message);
+
+        log.info("[RABBITMQ] Evento publicado | correlationId={} | exchange={} | routingKey={}",
+                correlationId, exchange, routingKey);
     }
-
-    public void enviarProdutoAtualizado(ProdutoAtualizadoEvent event) {
-        String correlationId = LogUtil.get();
-
-        rabbit.convertAndSend(
-                RabbitConfig.EXCHANGE,
-                RoutingKeys.PRODUTO_ATUALIZADO,
-                event,
-                message -> {
-                    message.getMessageProperties()
-                            .setHeader(HEADER, correlationId);
-                    return message;
-                }
-        );
-        log.info("[RABBITMQ] Evento ProdutoAtualizado enviado | correlationId={} | id={}",
-                correlationId,
-                event.id());    }
-
-    public void enviarProdutoDesativado(ProdutoDesativadoEvent event) {
-        String correlationId = LogUtil.get();
-
-        rabbit.convertAndSend(
-                RabbitConfig.EXCHANGE,
-                RoutingKeys.PRODUTO_DESATIVADO,
-                event,
-                message -> {
-                    message.getMessageProperties()
-                            .setHeader(HEADER, correlationId);
-                    return message;
-                }
-        );
-        log.info("[RABBITMQ] Evento ProdutoDesativado enviado | correlationId={} | id={}",
-                correlationId,
-                event.id());    }
 }

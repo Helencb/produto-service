@@ -5,10 +5,12 @@ import helen.com.produtoservice.dto.ProdutoResponseDTO;
 import helen.com.produtoservice.dto.ProdutoUpdateDTO;
 import helen.com.produtoservice.exception.ProdutoNotFoundException;
 import helen.com.produtoservice.mapper.ProdutoMapper;
+import helen.com.produtoservice.config.RabbitConfig;
 import helen.com.produtoservice.messaging.event.ProdutoAtualizadoEvent;
 import helen.com.produtoservice.messaging.event.ProdutoCriadoEvent;
 import helen.com.produtoservice.messaging.event.ProdutoDesativadoEvent;
-import helen.com.produtoservice.messaging.producer.ProdutoProducer;
+import helen.com.produtoservice.messaging.outbox.OutboxService;
+import helen.com.produtoservice.messaging.routing.RoutingKeys;
 import helen.com.produtoservice.model.Produto;
 import helen.com.produtoservice.model.StatusProduto;
 import helen.com.produtoservice.repository.ProdutoRepository;
@@ -29,7 +31,7 @@ import java.util.UUID;
 
 public class ProdutoService {
     private final ProdutoRepository repository;
-    private final ProdutoProducer producer;
+    private final OutboxService outbox;
     private final ProdutoMapper mapper;
 
     @Transactional
@@ -56,9 +58,9 @@ public class ProdutoService {
                 LocalDateTime.now()
         );
 
-        producer.enviarProdutoCriado(event);
+        outbox.registrar(RabbitConfig.EXCHANGE, RoutingKeys.PRODUTO_CRIADO, salvo.getId(), event);
 
-        log.info("Evento ProdutoCriado enviado | correlationId={} | id={}",
+        log.info("Evento ProdutoCriado registrado na outbox | correlationId={} | id={}",
                 LogUtil.get(),
                 salvo.getId());
 
@@ -117,9 +119,9 @@ public class ProdutoService {
                 LocalDateTime.now()
         );
 
-        producer.enviarProdutoAtualizado(event);
+        outbox.registrar(RabbitConfig.EXCHANGE, RoutingKeys.PRODUTO_ATUALIZADO, atualizado.getId(), event);
 
-        log.info("Evento ProdutoAtualizado enviado | correlationId={} | id={}",
+        log.info("Evento ProdutoAtualizado registrado na outbox | correlationId={} | id={}",
                 LogUtil.get(),
                 id);
 
@@ -177,9 +179,9 @@ public class ProdutoService {
                 LocalDateTime.now()
         );
 
-        producer.enviarProdutoDesativado(event);
+        outbox.registrar(RabbitConfig.EXCHANGE, RoutingKeys.PRODUTO_DESATIVADO, id, event);
 
-        log.info("Evento ProdutoDesativado enviado | correlationId={} | id={}",
+        log.info("Evento ProdutoDesativado registrado na outbox | correlationId={} | id={}",
                 LogUtil.get(),
                 id);
 
