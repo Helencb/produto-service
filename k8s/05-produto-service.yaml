@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: produto-service
+  namespace: produto-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: produto-service }
+  template:
+    metadata:
+      labels: { app: produto-service }
+    spec:
+      containers:
+        - name: produto-service
+          # imagem construida localmente e carregada no cluster (ver README do k8s/)
+          image: produto-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef: { name: produto-service-config }
+            - secretRef: { name: produto-service-secrets }
+          startupProbe:
+            httpGet: { path: /actuator/health, port: 8080 }
+            failureThreshold: 30    # tolera ate 30 * 5s = 150s pra subir antes de considerar falha
+            periodSeconds: 5
+          readinessProbe:
+            httpGet: { path: /actuator/health, port: 8080 }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /actuator/health, port: 8080 }
+            periodSeconds: 10
+          resources:
+            requests: { cpu: "100m", memory: "384Mi" }
+            limits: { cpu: "500m", memory: "512Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: produto-service
+  namespace: produto-service
+spec:
+  selector: { app: produto-service }
+  ports:
+    - port: 8080
+      targetPort: 8080
