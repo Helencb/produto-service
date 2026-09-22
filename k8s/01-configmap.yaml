@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: produto-service-config
+  namespace: produto-service
+data:
+  SPRING_PROFILES_ACTIVE: "docker"
+  DB_HOST: "mysql"
+  DB_PORT: "3306"
+  DB_NAME: "produto_db"
+  DB_USER: "root"
+  RABBIT_HOST: "rabbitmq"
+  RABBIT_PORT: "5672"
+  RABBIT_USER: "guest"
